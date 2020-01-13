@@ -69,12 +69,31 @@ def loadCsv(inputfilename, servername, user, password, dbname, metric,
 
     # open csv
     datapoints = []
-    inputfile = open(inputfilename, 'r')
+    inputfile = open(inputfilename, 'r', encoding='gbk')
     count = 0
+   
+    erroTime = '2016-11-09 14:45:44.829'
+
     with inputfile as csvfile:
         reader = csv.DictReader(csvfile, delimiter=delimiter)
         for row in reader:
-            datetime_naive = datetime.datetime.strptime(row[timecolumn],timeformat)
+
+            datetime_naive=datetime.datetime.now()
+            print("Line: " + row[timecolumn])
+
+            #Time exception
+            if row[timecolumn].find('周')>=0:
+                continue
+
+            if len(row[timecolumn]) < len(erroTime):
+                continue
+           
+            #Value exception
+            if row['value'].find('nan')>=0 or row['value'].find('inf')>=0:
+                continue
+
+            if len(row[timecolumn]) != 0:
+                datetime_naive = datetime.datetime.strptime(row[timecolumn],timeformat)
 
             if datetime_naive.tzinfo is None:
                 datetime_local = timezone(datatimezone).localize(datetime_naive)
@@ -137,6 +156,7 @@ def loadCsv(inputfilename, servername, user, password, dbname, metric,
     print('Done')
     
 if __name__ == "__main__":
+    
     parser = argparse.ArgumentParser(description='Csv to influxdb.')
 
     parser.add_argument('-i', '--input', nargs='?', required=True,
@@ -166,8 +186,8 @@ if __name__ == "__main__":
     parser.add_argument('-tc', '--timecolumn', nargs='?', default='timestamp',
                         help='Timestamp column name. Default: timestamp.')
 
-    parser.add_argument('-tf', '--timeformat', nargs='?', default='%Y-%m-%d %H:%M:%S',
-                        help='Timestamp format. Default: \'%%Y-%%m-%%d %%H:%%M:%%S\' e.g.: 1970-01-01 00:00:00')
+    parser.add_argument('-tf', '--timeformat', nargs='?', default='%Y-%m-%d %H:%M:%S.%f',
+                        help='Timestamp format. Default: \'%%Y-%%m-%%d %%H:%%M:%%S.%%f\' e.g.: 1970-01-01 00:00:00.000')
 
     parser.add_argument('-tz', '--timezone', default='UTC',
                         help='Timezone of supplied data. Default: UTC')
